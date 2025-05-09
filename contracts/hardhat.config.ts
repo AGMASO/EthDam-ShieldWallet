@@ -1,16 +1,16 @@
+require("dotenv").config();
 import type { HardhatUserConfig } from "hardhat/config";
 import "@oasisprotocol/sapphire-hardhat";
 import "@nomicfoundation/hardhat-toolbox-viem";
+import "./tasks";
 
-const accounts = process.env.PRIVATE_KEY
-  ? [process.env.PRIVATE_KEY]
-  : {
-      mnemonic: "test test test test test test test test test test test junk",
-      path: "m/44'/60'/0'/0",
-      initialIndex: 0,
-      count: 20,
-      passphrase: "",
-    };
+const accounts = {
+  mnemonic: `${process.env.MNEMONIC}`,
+  path: "m/44'/60'/0'/0",
+  initialIndex: 0,
+  count: 20,
+  passphrase: "",
+};
 
 const config: HardhatUserConfig = {
   solidity: "0.8.28",
