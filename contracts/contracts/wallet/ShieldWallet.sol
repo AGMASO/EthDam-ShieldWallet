@@ -4,7 +4,7 @@ pragma solidity 0.8.28;
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {OwnersManager} from "./OwnersManager.sol";
-import {ProposerManager} from "./ProporserManager.sol";
+import {ProposerManager} from "./ProposerManager.sol";
 import {CheckedExecutor} from "./CheckedExecutor.sol";
 import {Timelock} from "./Timelock.sol";
 import {FallbackManager} from "./FallbackManager.sol";

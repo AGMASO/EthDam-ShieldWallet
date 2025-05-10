@@ -958,6 +958,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@openzeppelin/contracts-upgradeable@npm:^5.3.0":
+  version: 5.3.0
+  resolution: "@openzeppelin/contracts-upgradeable@npm:5.3.0"
+  peerDependencies:
+    "@openzeppelin/contracts": 5.3.0
+  checksum: aba3a1903d689a603dda5e021f698e8d7b035b8d469712e8755393e2013297076a88fbc79f20ab1354e69d142f29939ab5d9e310204f79d42ec99eef08f61135
+  languageName: node
+  linkType: hard
+
+"@openzeppelin/contracts@npm:^5.3.0":
+  version: 5.3.0
+  resolution: "@openzeppelin/contracts@npm:5.3.0"
+  checksum: b8a2d97413c24635c92de4b2a1188fa58ab252515aff38eabce4fa66bd3d8ae1649010d17fccaeb4e266bf8314c8bd92757fedca97bf643b6b98e11dea3fa83d
+  languageName: node
+  linkType: hard
+
 "@pkgjs/parseargs@npm:^0.11.0":
   version: 0.11.0
   resolution: "@pkgjs/parseargs@npm:0.11.0"
@@ -2264,6 +2280,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"dotenv@npm:^16.5.0":
+  version: 16.5.0
+  resolution: "dotenv@npm:16.5.0"
+  checksum: 5bc94c919fbd955bf0ba44d33922a1e93d1078e64a1db5c30faeded1d996e7a83c55332cb8ea4fae5a9ca4d0be44cbceb95c5811e70f9f095298df09d1997dd9
+  languageName: node
+  linkType: hard
+
 "dunder-proto@npm:^1.0.1":
   version: 1.0.1
   resolution: "dunder-proto@npm:1.0.1"
@@ -3079,10 +3102,13 @@ __metadata:
     "@nomicfoundation/hardhat-viem": "npm:^2.0.0"
     "@nomicfoundation/ignition-core": "npm:^0.15.11"
     "@oasisprotocol/sapphire-hardhat": "npm:^2.22.2"
+    "@openzeppelin/contracts": "npm:^5.3.0"
+    "@openzeppelin/contracts-upgradeable": "npm:^5.3.0"
     "@types/chai": "npm:^4.2.0"
     "@types/chai-as-promised": "npm:^7.1.6"
     "@types/mocha": "npm:>=9.1.0"
     chai: "npm:^4.2.0"
+    dotenv: "npm:^16.5.0"
     hardhat: "npm:^2.24.0"
     hardhat-gas-reporter: "npm:^1.0.8"
     solidity-coverage: "npm:^0.8.1"
