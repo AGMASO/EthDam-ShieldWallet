@@ -39,7 +39,7 @@ abstract contract OwnersManager is OnlySelf {
     /// @notice Mapping for owners forming a linked list.
     /// @dev Maps an owner address to the next owner in the list.
     mapping(address => address) internal owners;
-    
+
     /// @notice Total count of the current owners.
     uint256 internal ownerCount;
 
@@ -56,6 +56,18 @@ abstract contract OwnersManager is OnlySelf {
     uint256 internal executionThreshold;
     /// @notice Revocation threshold value.
     uint256 internal revocationThreshold;
+
+    function thresholdTypeToThreshold(
+        ThresholdType thresholdType
+    ) public view returns (uint256 threshold) {
+        if (thresholdType == ThresholdType.MANAGEMENT) {
+            threshold = managementThreshold;
+        } else if (thresholdType == ThresholdType.EXECUTION) {
+            threshold = executionThreshold;
+        } else if (thresholdType == ThresholdType.REVOCATION) {
+            threshold = revocationThreshold;
+        }
+    }
 
     /// @notice Adds a new owner and optionally updates the threshold values.
     /// @param _owner Address of the new owner.
@@ -246,13 +258,13 @@ abstract contract OwnersManager is OnlySelf {
     function getManagementThreshold() public view returns (uint256) {
         return managementThreshold;
     }
-    
+
     /// @notice Retrieves the current execution threshold.
     /// @return The execution threshold.
     function getExecutionThreshold() public view returns (uint256) {
         return executionThreshold;
     }
-    
+
     /// @notice Retrieves the current revocation threshold.
     /// @return The revocation threshold.
     function getRevocationThreshold() public view returns (uint256) {

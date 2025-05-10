@@ -158,7 +158,19 @@ abstract contract CheckedExecutor is OnlySelf {
     /// @param mode The execution mode.
     /// @param executionData The data encoding the execution instructions.
     function _execute(bytes32 mode, bytes memory executionData) internal {
-        // TODO: Implement
+        bytes10 m = _getExecutionMode(mode);
+        if (m == EXECUTIONTYPE_CALL) {
+            Call memory call;
+            _executeCall(call);
+        } else if (m == EXECUTIONTYPE_BATCH) {
+            Call[] memory calls = abi.decode(executionData, (Call[]));
+            uint256 callsLength = calls.length;
+            for (uint256 i = 0; i < callsLength; ++i) {
+                _executeCall(calls[i]);
+            }
+        } else {
+            revert InvalidExecutionMode();
+        }
     }
 
     /// @notice Executes a single call using a low-level call.

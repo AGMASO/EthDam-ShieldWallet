@@ -8,10 +8,10 @@ import {OnlySelf} from "./OnlySelf.sol";
 abstract contract Timelock is OnlySelf {
     /// @notice Enumeration of possible execution states.
     enum ExecutionState {
-        Unset,   // Execution is not scheduled.
+        Unset, // Execution is not scheduled.
         Waiting, // Execution is scheduled but delay has not yet elapsed.
-        Ready,   // Delay elapsed; execution is ready.
-        Done     // Execution has been completed.
+        Ready, // Delay elapsed; execution is ready.
+        Done // Execution has been completed.
     }
 
     /// @notice Emitted when the delay for scheduling executions is changed.
@@ -21,6 +21,8 @@ abstract contract Timelock is OnlySelf {
     /// @notice Error thrown when an execution with the same id has already been proposed.
     error ExecutionAlreadyProposed(bytes32 id);
 
+    /// @notice Error thrown when an execution is not pending.
+    error OperationIsNotPending(bytes32 id);
 
     /// @dev Mapping from execution identifier to its scheduled timestamp.
     mapping(bytes32 id => uint256) private _timestamps;
@@ -50,13 +52,19 @@ abstract contract Timelock is OnlySelf {
     /// @notice Schedules an execution by assigning a timestamp that is the sum of the current block time and the delay.
     /// @param id The unique identifier for the execution.
     function _schedule(bytes32 id) internal {
-        if (isExecution(id)) {
-            revert ExecutionAlreadyProposed(id);
-        }
+        require(!isExecution(id), ExecutionAlreadyProposed(id));
         _timestamps[id] = block.timestamp + getDelay();
     }
 
-    // TODO: Add _done(id) internal
+    function _cancel(bytes32 id) internal {
+        require(isExecutionPending(id), OperationIsNotPending(id));
+        delete _timestamps[id];
+    }
+
+    function _finalize(bytes32 id) internal {
+        require(isExecutionReady(id), OperationIsNotPending(id));
+        _timestamps[id] = _DONE_TIMESTAMP;
+    }
 
     /// @notice Retrieves the scheduled timestamp for a given execution id.
     /// @param id The execution identifier.
@@ -88,6 +96,18 @@ abstract contract Timelock is OnlySelf {
     /// @return True if the execution is scheduled; false otherwise.
     function isExecution(bytes32 id) public view returns (bool) {
         return getExecutionState(id) != ExecutionState.Unset;
+    }
+
+    /// @notice Checks whether an execution is pending (waiting or ready) for the specified id.
+    /// @param id The execution identifier.
+    /// @return True if the execution is pending; false otherwise.
+    function isExecutionPending(bytes32 id) public view returns (bool) {
+        ExecutionState state = getExecutionState(id);
+        return state == ExecutionState.Waiting || state == ExecutionState.Ready;
+    }
+
+    function isExecutionReady(bytes32 id) public view returns (bool) {
+        return getExecutionState(id) == ExecutionState.Ready;
     }
 
     /// @notice Retrieves the delay value used for scheduling executions.

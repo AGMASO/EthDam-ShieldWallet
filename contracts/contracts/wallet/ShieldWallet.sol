@@ -3,6 +3,7 @@ pragma solidity 0.8.28;
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {EIP712Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
 import {OwnersManager} from "./OwnersManager.sol";
 import {ProposerManager} from "./ProposerManager.sol";
 import {CheckedExecutor} from "./CheckedExecutor.sol";
@@ -16,7 +17,8 @@ contract ShieldWallet is
     ProposerManager,
     CheckedExecutor,
     Timelock,
-    FallbackManager
+    FallbackManager,
+    EIP712Upgradeable
 {
     constructor() {
         _disableInitializers();
@@ -40,6 +42,7 @@ contract ShieldWallet is
         AllowedTarget[] calldata _allowedTargets
     ) public initializer {
         __UUPSUpgradeable_init();
+        __EIP712_init_unchained("ShieldWallet", "1");
 
         _setupOwnersAndThresholds(
             _owners,
@@ -56,6 +59,8 @@ contract ShieldWallet is
         for (uint256 i = 0; i < _allowedTargets.length; i++) {
             _addEntryToWhitelist(_allowedTargets[i]);
         }
+
+        _setDelay(_delay);
     }
 
     function _authorizeUpgrade(
@@ -73,10 +78,28 @@ contract ShieldWallet is
         uint256 timestamp
     );
 
+    event ExecutionCanceled(
+        bytes32 indexed id,
+        bytes32 mode,
+        bytes executionData,
+        ThresholdType indexed threshold,
+        uint256 timestamp
+    );
+
+    event ExecutionExecuted(
+        bytes32 indexed id,
+        bytes32 mode,
+        bytes executionData,
+        ThresholdType indexed threshold,
+        uint256 timestamp
+    );
+
     /*//////////////////////////////////////////////////////////////
                                  ERRORS
     //////////////////////////////////////////////////////////////*/
     error UnauthorizedProposer();
+    error SignaturesNotValid();
+    error InvalidSignature(address owner);
 
     /*//////////////////////////////////////////////////////////////
                                MODIFIERS
@@ -93,11 +116,6 @@ contract ShieldWallet is
                             EXECUTION LOGIC
     //////////////////////////////////////////////////////////////*/
 
-    // Struct that is EIP-712 signed by the owners EOA
-    struct ExecutionId {
-        bytes32 executionId;
-    }
-
     /// @dev Adds an execution to the queue.
     /// See: https://eips.ethereum.org/EIPS/eip-7579
     /// ShieldWallet EIP-7579 `executionData` encodings:
@@ -107,7 +125,7 @@ contract ShieldWallet is
         bytes32 mode,
         bytes calldata executionData
     ) external onlyProposerOrOwner {
-        (bytes32 executionId, ThresholdType threshold) = _validateExecution(
+        (bytes32 executionId, ThresholdType thresholdType) = _validateExecution(
             mode,
             executionData
         );
@@ -118,20 +136,127 @@ contract ShieldWallet is
             executionId,
             mode,
             executionData,
-            threshold,
+            thresholdType,
             block.timestamp
         );
     }
 
     /// @dev Removes an execution from the queue.
-    function revoExecution() external {
-        // TODO: Adjust arguments
-        //TODO: Check revoker threshold
+    function cancExecution(
+        bytes32 mode,
+        bytes calldata executionData,
+        ThresholdType thresholdType,
+        uint256 timestamp,
+        bytes calldata signatures
+    ) external {
+        bytes32 executionId = getExecutionId(
+            mode,
+            executionData,
+            thresholdType,
+            timestamp
+        );
+
+        checkSignatures(executionId, signatures, ThresholdType.REVOCATION);
+
+        _cancel(executionId);
+
+        emit ExecutionCanceled(
+            executionId,
+            mode,
+            executionData,
+            thresholdType,
+            block.timestamp
+        );
     }
 
     /// @dev Executes an execution from the queue.
-    function execExecution(bytes calldata signatures) external {
-        // TODO: Adjust arguments
-        // TODO: Check executor threshold
+    function execExecution(
+        bytes32 mode,
+        bytes calldata executionData,
+        ThresholdType thresholdType,
+        uint256 timestamp,
+        bytes calldata signatures
+    ) external {
+        bytes32 executionId = getExecutionId(
+            mode,
+            executionData,
+            thresholdType,
+            timestamp
+        );
+
+        checkSignatures(executionId, signatures, thresholdType);
+
+        _finalize(executionId);
+
+        _execute(mode, executionData);
+
+        emit ExecutionExecuted(
+            executionId,
+            mode,
+            executionData,
+            thresholdType,
+            timestamp
+        );
+    }
+
+    function checkSignatures(
+        bytes32 executionId,
+        bytes calldata signatures,
+        ThresholdType thresholdType
+    ) public view {
+        bytes32 executionIdHash = _hashTypedDataV4(
+            keccak256(
+                abi.encode(
+                    keccak256("ExecutionId(bytes32 execution)"),
+                    executionId
+                )
+            )
+        );
+
+        uint256 threshold = thresholdTypeToThreshold(thresholdType);
+
+        // TODO: Add EIP-1271 Signatures
+        require(signatures.length == threshold * 65, SignaturesNotValid());
+
+        address lastOwner = address(0);
+        address currentOwner;
+        uint256 v;
+        bytes32 r;
+        bytes32 s;
+        uint256 i;
+
+        for (i = 0; i < threshold; ++i) {
+            (v, r, s) = signatureSplit(signatures, i);
+            currentOwner = ecrecover(
+                keccak256(
+                    abi.encodePacked(
+                        "\x19Ethereum Signed Message:\n32",
+                        executionIdHash
+                    )
+                ),
+                uint8(v - 4),
+                r,
+                s
+            );
+            require(
+                currentOwner >= lastOwner &&
+                    owners[currentOwner] != address(0) &&
+                    currentOwner == HEAD,
+                InvalidSignature(currentOwner)
+            );
+            lastOwner = currentOwner;
+        }
+    }
+
+    function signatureSplit(
+        bytes memory signatures,
+        uint256 pos
+    ) internal pure returns (uint8 v, bytes32 r, bytes32 s) {
+        assembly {
+            let signaturePos := mul(0x41, pos)
+            r := mload(add(signatures, add(signaturePos, 0x20)))
+            s := mload(add(signatures, add(signaturePos, 0x40)))
+            v := byte(0, mload(add(signatures, add(signaturePos, 0x60))))
+        }
     }
 }
