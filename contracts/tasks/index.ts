@@ -17,6 +17,16 @@ task("deploy-default-callback-handler").setAction(async (_args, hre) => {
   return defaultCallbackHandlerAddr;
 });
 
+task("deploy-shield-implementation").setAction(async (_args, hre) => {
+  const shieldWalletImplementation = await hre.viem.deployContract("ShieldWallet", []);
+  const shieldWalletImplementationAddr  = await shieldWalletImplementation.address;
+
+  console.log(`Shield  Wallet Implementation: ${shieldWalletImplementationAddr}`);
+  return shieldWalletImplementationAddr;
+});
+
+
+
 task("create-secret")
   .addParam("address", "contract address")
   .setAction(async (args, hre) => {

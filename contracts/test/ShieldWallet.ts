@@ -62,6 +62,7 @@ describe("ShieldWallet", function () {
         defaultCallbackHandler.address,
         proposer.account.address,
         BigInt(60), // 5 blocks delay
+        [],
       ],
     });
 
@@ -120,6 +121,7 @@ describe("ShieldWallet", function () {
           defaultCallbackHandler.address,
           proposer.account.address,
           BigInt(60), // 5 blocks delay
+          [],
         ],
       });
 
