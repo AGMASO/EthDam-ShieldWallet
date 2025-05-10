@@ -43,9 +43,9 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
         <QueryClientProvider client={queryClient}>
           <RainbowKitProvider
             theme={lightTheme({
-              accentColor: "#f4f4f4",
+              accentColor: "#D9D9D9",
               overlayBlur: "small",
-              accentColorForeground: "#883d67",
+              accentColorForeground: "#003856",
             })}
           >
             {children}

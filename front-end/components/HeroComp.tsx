@@ -36,7 +36,7 @@ export default function HeroComponent() {
             className='relative block before:content-[attr(data-content)] before:w-full before:z-0 before:block before:absolute before:top-0 before:px-2 before:bottom-0 before:left-0 before:text-center before:text-[#04060c] before:animate-gradient-background-3'
             data-content='Never get Hacked.'
           >
-            <span className='px-2 text-transparent bg-clip-text bg-gradient-to-r from-[#1184B6] to-gradient-3-end animate-gradient-foreground-3'>
+            <span className='px-2 text-transparent bg-clip-text bg-gradient-to-r from-[#1184B6] to-[#D9D9D9] animate-gradient-foreground-3'>
               Never get Hacked.
             </span>
           </span>
