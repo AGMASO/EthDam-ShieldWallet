@@ -1,10 +1,13 @@
 import {
   time,
   loadFixture,
+  impersonateAccount,
+  setBalance,
 } from "@nomicfoundation/hardhat-toolbox-viem/network-helpers";
 import { getContractAt } from "@nomicfoundation/hardhat-viem/types";
 import { expect } from "chai";
 import hre from "hardhat";
+import { bigint } from "hardhat/internal/core/params/argumentTypes";
 import {
   getAddress,
   parseGwei,
@@ -12,6 +15,7 @@ import {
   encodeFunctionData,
   encodeAbiParameters,
   parseAbiParameters,
+  parseEther,
 } from "viem";
 
 // Default allowed targets for whitelist operations in the wallet contract.
@@ -96,12 +100,14 @@ describe("ShieldWallet", function () {
     );
 
     const publicClient = await hre.viem.getPublicClient();
+    const testClient = await hre.viem.getTestClient();
 
     return {
       shieldWalletFactory,
       defaultCallbackHandler,
       shieldWalletImplementation,
       publicClient,
+      testClient,
     };
   }
 
@@ -111,6 +117,7 @@ describe("ShieldWallet", function () {
       defaultCallbackHandler,
       shieldWalletImplementation,
       publicClient,
+      testClient,
     } = await loadFixture(deployShieldWalletFactoryFixture);
 
     const [owner1, owner2, owner3, owner4, proposer] =
@@ -161,6 +168,7 @@ describe("ShieldWallet", function () {
       owner4,
       proposer,
       publicClient,
+      testClient,
     };
   }
 
@@ -238,19 +246,61 @@ describe("ShieldWallet", function () {
   });
 
   describe("Transaction Preparation", function () {
-    it("Transaction not whitelisted should fail when being proposed", async function () {
+    it("Invalid execution mode should revert", async function () {
       const { shieldWallet, proposer } = await loadFixture(deployShieldWallet);
 
       const executionData = encodePacked(
         ["address", "uint256", "bytes"],
         ["0x0000000000000000000000000000000000000000", 0n, "0x"]
       );
-      expect(
-        shieldWallet.write.propExecution([EXECUTIONTYPE_CALL, executionData], {
-          address: proposer.account.address,
-        })
-      ).to.be.reverted;
+
+      await expect(
+        shieldWallet.write.propExecution(
+          [
+            "0x0200000000000000000000000000000000000000000000000000000000000000",
+            executionData,
+          ],
+          {
+            account: proposer.account.address,
+          }
+        )
+      ).to.be.rejectedWith("InvalidExecutionMode()");
     });
+
+    it("Non authorized account should not be able to propose executions", async function () {
+      const { shieldWallet, proposer } = await loadFixture(deployShieldWallet);
+
+      const executionData = encodePacked(
+        ["address", "uint256", "bytes"],
+        ["0x0000000000000000000000000000000000000000", 0n, "0x"]
+      );
+
+      await setBalance(
+        "0xA0cf798816d4b9b9866b5330E9A46A18382f251e",
+        parseEther("100")
+      );
+      await impersonateAccount("0xA0cf798816d4b9b9866b5330E9A46A18382f251e");
+
+      await expect(
+        shieldWallet.write.propExecution([EXECUTIONTYPE_CALL, executionData], {
+          account: "0xA0cf798816d4b9b9866b5330E9A46A18382f251e",
+        })
+      ).to.be.rejectedWith("UnauthorizedProposer()");
+    });
+
+    it("Transaction not whitelisted should fail when being proposed", async function () {
+      const { shieldWallet, proposer } = await loadFixture(deployShieldWallet);
+      const executionData = encodePacked(
+        ["address", "uint256", "bytes"],
+        ["0x0000000000000000000000000000000000000000", 0n, "0x"]
+      );
+      await expect(
+        shieldWallet.write.propExecution([EXECUTIONTYPE_CALL, executionData], {
+          account: proposer.account.address,
+        })
+      ).to.be.rejectedWith("CallNotAllowed()");
+    });
+
     it("Proposer should be able to propose transaction", async function () {
       const { shieldWallet, shieldWalletImplementation, proposer } =
         await loadFixture(deployShieldWallet);
@@ -265,15 +315,14 @@ describe("ShieldWallet", function () {
 
       const executionData = encodePacked(
         ["address", "uint256", "bytes"],
-        ["0x0000000000000000000000000000000000000000", 0n, calldata]
+        [shieldWallet.address, 0n, calldata]
       );
 
-      await shieldWallet.write.propExecution(
-        [EXECUTIONTYPE_CALL, executionData],
-        {
-          address: proposer.account.address,
-        }
-      );
+      await expect(
+        shieldWallet.write.propExecution([EXECUTIONTYPE_CALL, executionData], {
+          account: proposer.account.address,
+        })
+      ).not.to.be.rejected;
     });
 
     it("Owner should be able to propose transaction", async function () {
@@ -290,16 +339,16 @@ describe("ShieldWallet", function () {
 
       const executionData = encodePacked(
         ["address", "uint256", "bytes"],
-        ["0x0000000000000000000000000000000000000000", 0n, calldata]
+        [shieldWallet.address, 0n, calldata]
       );
 
-      await shieldWallet.write.propExecution(
-        [EXECUTIONTYPE_CALL, executionData],
-        {
-          address: owner1.account.address,
-        }
-      );
+      await expect(
+        shieldWallet.write.propExecution([EXECUTIONTYPE_CALL, executionData], {
+          account: owner1.account.address,
+        })
+      ).not.to.be.rejected;
     });
+
     it("Proposer should be able to propose transaction batched", async function () {
       const { shieldWallet, shieldWalletImplementation, proposer } =
         await loadFixture(deployShieldWallet);
@@ -330,12 +379,11 @@ describe("ShieldWallet", function () {
         ]
       );
 
-      await shieldWallet.write.propExecution(
-        [EXECUTIONTYPE_CALL, executionData],
-        {
-          address: proposer.account.address,
-        }
-      );
+      await expect(
+        shieldWallet.write.propExecution([EXECUTIONTYPE_BATCH, "0x00"], {
+          account: proposer.account.address,
+        })
+      ).to.be.rejectedWith("InvalidExecutionMode()");
     });
   });
 
