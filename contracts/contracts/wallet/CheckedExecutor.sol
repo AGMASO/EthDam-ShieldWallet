@@ -2,9 +2,23 @@
 pragma solidity 0.8.28;
 
 import {OwnersManager} from "./OwnersManager.sol";
+import {OnlySelf} from "./OnlySelf.sol";
 
 /// @notice Executor following EIP-7579 Interface.
-abstract contract CheckedExecutor {
+abstract contract CheckedExecutor is OnlySelf {
+    ///  @notice Emitted when a new allowed target is added to the whitelist
+    event AllowedTargetAdded(
+        address indexed target,
+        bytes4 indexed selector,
+        uint256 maxValue
+    );
+    ///  @notice Emitted when a new allowed target is deleted from the whitelist
+    event AllowedTargetDeleted(
+        address indexed target,
+        bytes4 indexed selector,
+        uint256 maxValue
+    );
+
     /// @dev Revert when an invalid execution mode is provided.
     error InvalidExecutionMode();
     /// @dev Revert when the call is not allowed.
@@ -16,7 +30,8 @@ abstract contract CheckedExecutor {
         uint256 maxValue;
     }
     /// @dev Allowed Calls Whitelist.
-    mapping(address to => mapping(bytes4 selector => WhitelistEntry)) public whitelist;
+    mapping(address to => mapping(bytes4 selector => WhitelistEntry))
+        public whitelist;
 
     /// @dev Call struct for the `execute` function.
     struct Call {
@@ -35,6 +50,51 @@ abstract contract CheckedExecutor {
     bytes10 internal constant EXECUTIONTYPE_CALL = 0x00000000000000000000;
     bytes10 internal constant EXECUTIONTYPE_BATCH = 0x01000000000000000000;
 
+    /// @dev Struct that defines an allowed target, used to specify whitelist entries.
+    struct AllowedTarget {
+        address target;
+        bytes4 selector;
+        uint256 maxValue;
+    }
+
+    /// @notice Adds a new allowed target entry to the whitelist and emits an AllowedTargetAdded event.
+    /// @param newAllowedTarget The allowed target details including target address, function selector, and maximum allowed value.
+    function addEntryToWhitelist(
+        AllowedTarget calldata newAllowedTarget
+    ) external onlySelf {
+        _addEntryToWhitelist(newAllowedTarget);
+        emit AllowedTargetAdded(
+            newAllowedTarget.target,
+            newAllowedTarget.selector,
+            newAllowedTarget.maxValue
+        );
+    }
+
+    /// @notice Internal function that adds an allowed target entry to the whitelist.
+    /// @param newAllowedTarget The allowed target details to be added.
+    function _addEntryToWhitelist(
+        AllowedTarget calldata newAllowedTarget
+    ) internal {
+        whitelist[newAllowedTarget.target][
+            newAllowedTarget.selector
+        ] = WhitelistEntry({
+            allowed: true,
+            maxValue: newAllowedTarget.maxValue
+        });
+    }
+
+    /// @notice Deletes an allowed target entry from the whitelist and emits an AllowedTargetDeleted event.
+    /// @param allowedTarget The allowed target entry details to be deleted.
+    function deleteEntryFromWhitelist(
+        AllowedTarget calldata allowedTarget
+    ) external onlySelf {
+        delete whitelist[allowedTarget.target][allowedTarget.selector];
+        emit AllowedTargetDeleted(
+            allowedTarget.target,
+            allowedTarget.selector,
+            allowedTarget.maxValue
+        );
+    }
 
     /// @notice Validates the execution data and determines the execution ID and required threshold.
     /// @dev For single calls the target, value and callData are packed via abi.encodePacked;
@@ -104,7 +164,9 @@ abstract contract CheckedExecutor {
     /// @dev Bubbles up the revert reason if the call fails.
     /// @param call The call object to be executed.
     function _executeCall(Call memory call) internal {
-        (bool success, bytes memory result) = call.to.call{value: call.value}(call.data);
+        (bool success, bytes memory result) = call.to.call{value: call.value}(
+            call.data
+        );
         if (success) return;
         assembly {
             // Bubble up the revert if the call reverts.
@@ -143,6 +205,8 @@ abstract contract CheckedExecutor {
     /// @param mode The complete mode data.
     /// @return m The extracted execution mode.
     function _getExecutionMode(bytes32 mode) internal pure returns (bytes10 m) {
-        m = bytes10(uint80((uint256(mode) >> (22 * 8)) & 0xffff00000000ffffffff));
+        m = bytes10(
+            uint80((uint256(mode) >> (22 * 8)) & 0xffff00000000ffffffff)
+        );
     }
 }

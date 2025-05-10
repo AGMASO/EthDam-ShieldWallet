@@ -4,6 +4,7 @@ pragma solidity 0.8.28;
 import {OnlySelf} from "./OnlySelf.sol";
 
 abstract contract ProposerManager is OnlySelf {
+    /// @notice Emitted when the proposer address is changed.
     event ChangedProposer(address proposer);
 
     // keccak256("proposer_manager.proposer.address")

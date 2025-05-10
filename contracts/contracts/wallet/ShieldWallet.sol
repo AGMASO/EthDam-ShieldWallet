@@ -29,7 +29,6 @@ contract ShieldWallet is
                                UUPS PROXY
     //////////////////////////////////////////////////////////////*/
 
-    // TODO: Add initialization data
     function initialize(
         address[] calldata _owners,
         uint256 _managementThreshold,
@@ -37,7 +36,8 @@ contract ShieldWallet is
         uint256 _revocationThreshold,
         address _fallbackHandler,
         address _proposer,
-        uint256 _delay
+        uint256 _delay,
+        AllowedTarget[] calldata _allowedTargets
     ) public initializer {
         __UUPSUpgradeable_init();
 
@@ -52,9 +52,12 @@ contract ShieldWallet is
             _setFallbackHandler(_fallbackHandler);
 
         if (_proposer != address(0)) _setProposer(_proposer);
+
+        for (uint256 i = 0; i < _allowedTargets.length; i++) {
+            _addEntryToWhitelist(_allowedTargets[i]);
+        }
     }
 
-    // TODO: Check if we need this here upgradeToAndCall is already onlyProxy
     function _authorizeUpgrade(
         address newImplementation
     ) internal override onlySelf {}

@@ -25,7 +25,8 @@ interface IShieldWallet {
         uint256 revocationThreshold,
         address fallbackHandler,
         address proposer,
-        uint256 delay
+        uint256 delay,
+        AllowedTarget[] memory allowedTargets
     ) external;
 
     /// @notice Upgrades the contract to a new implementation.
@@ -51,6 +52,25 @@ interface IShieldWallet {
 
     // TODO: Fix once function is defined
     function execExecution() external;
+
+    /// @dev Struct that defines an allowed target, used to specify whitelist entries.
+    struct AllowedTarget {
+        address target;
+        bytes4 selector;
+        uint256 maxValue;
+    }
+
+    /// @notice Adds a new allowed target entry to the whitelist and emits an AllowedTargetAdded event.
+    /// @param newAllowedTarget The allowed target details including target address, function selector, and maximum allowed value.
+    function addEntryToWhitelist(
+        AllowedTarget calldata newAllowedTarget
+    ) external;
+
+    /// @notice Internal function that adds an allowed target entry to the whitelist.
+    /// @param newAllowedTarget The allowed target details to be added.
+    function deleteEntryFromWhitelist(
+        AllowedTarget calldata newAllowedTarget
+    ) external;
 
     /// @notice Adds a new owner to the wallet and specifies a new threshold set.
     /// @dev This function can only be called by the contract itself.
@@ -119,16 +139,11 @@ interface IShieldWallet {
     /// @param delay The new delay for the timelock.
     function setDelay(uint256 delay) external;
 
-    struct AllowedTarget {
-        address target;
-        bytes4 selector;
-        uint256 maxValue;
-    }
-
     /// @notice Sets the whitelist entry for the wallet.
     /// @dev This function can only be called by the contract itself.
     /// @param targets The list of allowed targets. 
     function setWhitelistEntries(AllowedTarget[] calldata targets) external;
+
 
     /// @notice Removes the whitelist entry for the wallet.
     /// @dev This function can only be called by the contract itself.
