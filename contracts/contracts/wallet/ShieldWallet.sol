@@ -20,7 +20,9 @@ contract ShieldWallet is
 {
     constructor() {
         _disableInitializers();
-        // TODO: Set All thresholds to 1 to avoid transaction execution in the implementation
+        managementThreshold = 1;
+        executionThreshold = 1;
+        revocationThreshold = 1;
     }
 
     /*//////////////////////////////////////////////////////////////

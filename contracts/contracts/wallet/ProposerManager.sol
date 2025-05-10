@@ -27,7 +27,7 @@ abstract contract ProposerManager is OnlySelf {
 
     /// @notice Retrieves the current proposer address from storage.
     /// @return _proposer The current proposer address.
-    function getProposer() internal view returns (address _proposer) {
+    function getProposer() public view returns (address _proposer) {
         assembly {
             _proposer := sload(PROPOSER_STORAGE_SLOT)
         }

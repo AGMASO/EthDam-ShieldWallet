@@ -1,21 +1,20 @@
 import { task } from "hardhat/config";
 import { hexToString, toHex, parseAbiParameters } from "viem";
 
+task("deploy-shield-factory").setAction(async (_args, hre) => {
+  const factory = await hre.viem.deployContract("ShieldWalletFactory", []);
+  const factoryAddr = await factory.address;
 
-task("test").setAction(async (_args, hre) => {
-  console.log(
-    parseAbiParameters(
-      "(address target, uint256 value, bytes callData)[]"
-    )
-  );
+  console.log(`Factory address: ${factoryAddr}`);
+  return factoryAddr;
 });
 
-task("deploy").setAction(async (_args, hre) => {
-  const vigil = await hre.viem.deployContract("Vigil", []);
-  const vigilAddr = await vigil.address;
+task("deploy-default-callback-handler").setAction(async (_args, hre) => {
+  const defaultCallbackHandler = await hre.viem.deployContract("DefaultCallbackHandler", []);
+  const defaultCallbackHandlerAddr  = await defaultCallbackHandler.address;
 
-  console.log(`Vigil address: ${vigilAddr}`);
-  return vigilAddr;
+  console.log(`Default Callback Handler address: ${defaultCallbackHandlerAddr}`);
+  return defaultCallbackHandlerAddr;
 });
 
 task("create-secret")

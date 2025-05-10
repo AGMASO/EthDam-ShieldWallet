@@ -16,7 +16,7 @@ contract ShieldWalletFactory {
     function deployShieldWallet(
         address _implementation,
         bytes memory initializer
-    ) internal returns (ERC1967Proxy proxy) {
+    ) external payable returns (ERC1967Proxy proxy) {
         require(isContract(_implementation), "Implementation contract not deployed");
         
         proxy = new ERC1967Proxy(
