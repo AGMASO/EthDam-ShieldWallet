@@ -5,6 +5,19 @@ pragma solidity 0.8.28;
  * @dev Interface of the ShieldWallet contract.
  */
 interface IShieldWallet {
+    
+    /**
+     * @dev Enum representing the different threshold types used in the ShieldWallet.
+     * @notice The threshold types specify the minimum number of approvals required for:
+     *         - MANAGEMENT: Performing management actions.
+     *         - EXECUTION: Executing transactions.
+     *         - REVOCATION: Revoking operations.
+     */
+    enum ThresholdType {
+        MANAGEMENT,
+        EXECUTION,
+        REVOCATION
+    }
     // TODO: Add events
 
     // TODO: Add view functions
@@ -18,6 +31,7 @@ interface IShieldWallet {
     /// @param fallbackHandler The address of the fallback handler.
     /// @param proposer The address of the proposer.
     /// @param delay The delay for the timelock.
+    /// @param allowedTargets Array of allowed target entries.
     function initialize(
         address[] calldata owners,
         uint256 managementThreshold,
@@ -47,11 +61,46 @@ interface IShieldWallet {
     /// @param executionData The data to be executed.
     function propExecution(bytes32 mode, bytes calldata executionData) external;
 
-    // TODO: Fix once function is defined
-    function revoExecution() external;
+    /// @notice Cancels a scheduled execution.
+    /// @dev Can only be called by an authorized entity. Reverts if cancellation is not allowed.
+    /// @param mode The mode of the execution.
+    /// @param executionData The data corresponding to the execution to cancel.
+    /// @param thresholdType The threshold type required to cancel the execution.
+    /// @param timestamp The timestamp associated with the execution.
+    /// @param signatures The concatenated signatures for authorization.
+    function cancExecution(
+        bytes32 mode,
+        bytes calldata executionData,
+        ThresholdType thresholdType,
+        uint256 timestamp,
+        bytes calldata signatures
+    ) external;
 
-    // TODO: Fix once function is defined
-    function execExecution() external;
+    /// @notice Executes a queued execution.
+    /// @dev Executes the pending transaction if verification and timing conditions are met.
+    /// @param mode The mode of the execution.
+    /// @param executionData The data associated with the execution.
+    /// @param thresholdType The threshold type required to execute the action.
+    /// @param timestamp The timestamp at which the execution was scheduled.
+    /// @param signatures The concatenated signatures for authorization.
+    function execExecution(
+        bytes32 mode,
+        bytes calldata executionData,
+        ThresholdType thresholdType,
+        uint256 timestamp,
+        bytes calldata signatures
+    ) external;
+
+    /// @notice Checks the validity of the provided signatures for an execution.
+    /// @dev Verifies that the signatures correspond to the execution id and meet the required threshold criteria.
+    /// @param executionId The identifier of the execution.
+    /// @param signatures The concatenated signatures to verify.
+    /// @param thresholdType The threshold type against which to validate the signatures.
+    function checkSignatures(
+        bytes32 executionId,
+        bytes calldata signatures,
+        ThresholdType thresholdType
+    ) external;
 
     /// @dev Struct that defines an allowed target, used to specify whitelist entries.
     struct AllowedTarget {
@@ -66,8 +115,8 @@ interface IShieldWallet {
         AllowedTarget calldata newAllowedTarget
     ) external;
 
-    /// @notice Internal function that adds an allowed target entry to the whitelist.
-    /// @param newAllowedTarget The allowed target details to be added.
+    /// @notice Deletes an allowed target entry from the whitelist.
+    /// @param newAllowedTarget The allowed target details to be removed.
     function deleteEntryFromWhitelist(
         AllowedTarget calldata newAllowedTarget
     ) external;
@@ -85,7 +134,7 @@ interface IShieldWallet {
         uint256 revocationThreshold
     ) external;
 
-    /// @notice Removes an owner and specify a new threshold set.
+    /// @notice Removes an owner and specifies a new threshold set.
     /// @dev This function can only be called by the contract itself.
     /// @param prevOwner The address of the previous owner.
     /// @param owner The address of the owner to be removed.
@@ -125,29 +174,25 @@ interface IShieldWallet {
     /// @notice Sets the fallback handler for the wallet.
     /// @dev This function can only be called by the contract itself.
     /// @param fallbackHandler The address of the fallback handler.
-    function setFallbackHandler(
-        address fallbackHandler
-    ) external;
+    function setFallbackHandler(address fallbackHandler) external;
 
     /// @notice Sets the proposer for the wallet.
     /// @dev This function can only be called by the contract itself.
     /// @param proposer The address of the proposer.
     function setProposer(address proposer) external;
-    
-    /// @notice Sets delay.
+
+    /// @notice Sets the delay for the timelock.
     /// @dev This function can only be called by the contract itself.
     /// @param delay The new delay for the timelock.
     function setDelay(uint256 delay) external;
 
-    /// @notice Sets the whitelist entry for the wallet.
-    /// @dev This function can only be called by the contract itself.
-    /// @param targets The list of allowed targets. 
-    function setWhitelistEntries(AllowedTarget[] calldata targets) external;
-
-
-    /// @notice Removes the whitelist entry for the wallet.
+    /// @notice Sets the whitelist entries for the wallet.
     /// @dev This function can only be called by the contract itself.
     /// @param targets The list of allowed targets.
-    function removeWhitelistEntries(AllowedTarget[] calldata targets) external;
+    function setWhitelistEntries(AllowedTarget[] calldata targets) external;
 
+    /// @notice Removes the whitelist entries from the wallet.
+    /// @dev This function can only be called by the contract itself.
+    /// @param targets The list of allowed targets to remove.
+    function removeWhitelistEntries(AllowedTarget[] calldata targets) external;
 }
