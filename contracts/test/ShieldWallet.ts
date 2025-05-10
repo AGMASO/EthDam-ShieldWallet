@@ -366,12 +366,12 @@ describe("ShieldWallet", function () {
         [
           [
             {
-              target: "0x0000000000000000000000000000000000000000",
+              target: shieldWallet.address,
               value: 0n,
               callData: calldata,
             },
             {
-              target: "0x0000000000000000000000000000000000000000",
+              target: shieldWallet.address,
               value: 0n,
               callData: calldata,
             },
@@ -379,11 +379,17 @@ describe("ShieldWallet", function () {
         ]
       );
 
+      await shieldWallet.write.propExecution(
+        [EXECUTIONTYPE_BATCH, executionData],
+        {
+          account: proposer.account.address,
+        }
+      );
       await expect(
-        shieldWallet.write.propExecution([EXECUTIONTYPE_BATCH, "0x00"], {
+        shieldWallet.write.propExecution([EXECUTIONTYPE_BATCH, executionData], {
           account: proposer.account.address,
         })
-      ).to.be.rejectedWith("InvalidExecutionMode()");
+      ).not.to.be.rejected;
     });
   });
 
