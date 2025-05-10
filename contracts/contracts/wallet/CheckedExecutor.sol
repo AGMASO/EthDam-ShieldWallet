@@ -75,9 +75,10 @@ abstract contract CheckedExecutor is OnlySelf {
     function _addEntryToWhitelist(
         AllowedTarget calldata newAllowedTarget
     ) internal {
-        whitelist[newAllowedTarget.target][
-            newAllowedTarget.selector
-        ] = WhitelistEntry({
+        address target = newAllowedTarget.target == address(0)
+            ? address(this)
+            : newAllowedTarget.target;
+        whitelist[target][newAllowedTarget.selector] = WhitelistEntry({
             allowed: true,
             maxValue: newAllowedTarget.maxValue
         });

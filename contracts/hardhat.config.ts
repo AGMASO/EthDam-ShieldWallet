@@ -2,6 +2,7 @@ require("dotenv").config();
 import type { HardhatUserConfig } from "hardhat/config";
 import "@oasisprotocol/sapphire-hardhat";
 import "@nomicfoundation/hardhat-toolbox-viem";
+import "@nomicfoundation/hardhat-chai-matchers";
 import "./tasks";
 
 const accounts = {
