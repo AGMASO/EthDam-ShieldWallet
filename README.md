@@ -1,4 +1,5 @@
 # Shield Wallet
+## Winner of the Best Security Project at EthDam 2025
 ![Shield Wallet Logo](./img/ShieldWalletLogo.png)
 
 Shield Wallet is a POC of a next-generation multisignature meta-transaction design. It is simple but robust in its core and includes many features that have been designed by analyzing the current vulnerabilities in Gnosis Safe that led to attacks like the Bybit one.
